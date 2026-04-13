@@ -1,6 +1,5 @@
 // ============================================
-// BLOCK SHOOTER V4 - Motor del Juego
-// Versión mejorada con nuevas características
+// BLOCK SHOOTER V4 - Motor del Juego (Versión Corregida)
 // ============================================
 
 // ===== CONFIGURACIÓN GLOBAL =====
@@ -14,12 +13,13 @@ const GameConfig = {
     version: '4.0.0'
 };
 
-// ===== SISTEMA DE AUDIO =====
+// ===== SISTEMA DE AUDIO (Corregido para interacción del usuario) =====
 class AudioSystem {
     constructor() {
         this.sounds = {};
         this.music = null;
         this.volume = 0.7;
+        this.hasUserInteracted = false;
         this.loadSounds();
     }
 
@@ -30,25 +30,29 @@ class AudioSystem {
                 src: ['assets/audio/music/menu.mp3'],
                 loop: true,
                 volume: 0.5,
-                preload: true
+                preload: true,
+                onplay: () => console.log('🎵 Música de menú reproducida.')
             }),
             game: new Howl({
                 src: ['assets/audio/music/game.mp3'],
                 loop: true,
                 volume: 0.5,
-                preload: true
+                preload: true,
+                onplay: () => console.log('🎵 Música de juego reproducida.')
             }),
             victory: new Howl({
                 src: ['assets/audio/music/victory.mp3'],
                 loop: false,
                 volume: 0.7,
-                preload: true
+                preload: true,
+                onplay: () => console.log('🎉 Música de victoria reproducida.')
             }),
             gameOver: new Howl({
                 src: ['assets/audio/music/gameover.mp3'],
                 loop: false,
                 volume: 0.7,
-                preload: true
+                preload: true,
+                onplay: () => console.log('💀 Música de game over reproducida.')
             })
         };
 
@@ -56,32 +60,60 @@ class AudioSystem {
         this.sounds.sfx = {
             shoot: new Howl({
                 src: ['assets/audio/sfx/shoot.mp3'],
-                volume: 0.8
+                volume: 0.8,
+                onplay: () => console.log('🔫 Sonido de disparo reproducido.')
             }),
             hit: new Howl({
                 src: ['assets/audio/sfx/hit.mp3'],
-                volume: 0.7
+                volume: 0.7,
+                onplay: () => console.log('🎯 Sonido de impacto reproducido.')
             }),
             powerup: new Howl({
                 src: ['assets/audio/sfx/powerup.mp3'],
-                volume: 0.9
+                volume: 0.9,
+                onplay: () => console.log('⚡ Sonido de power-up reproducido.')
             }),
             destroy: new Howl({
                 src: ['assets/audio/sfx/destroy.mp3'],
-                volume: 0.8
+                volume: 0.8,
+                onplay: () => console.log('💥 Sonido de destrucción reproducido.')
             }),
             button: new Howl({
                 src: ['assets/audio/sfx/button.mp3'],
-                volume: 0.6
+                volume: 0.6,
+                onplay: () => console.log('🖱️ Sonido de botón reproducido.')
             }),
             levelComplete: new Howl({
                 src: ['assets/audio/sfx/level_complete.mp3'],
-                volume: 0.8
+                volume: 0.8,
+                onplay: () => console.log('🏆 Sonido de nivel completado reproducido.')
             })
         };
     }
 
+    enableAudio() {
+        if (!this.hasUserInteracted) {
+            this.hasUserInteracted = true;
+            console.log('✅ AudioContext habilitado por interacción del usuario.');
+            
+            // Inicializar el sistema de audio
+            Object.values(this.sounds.music).forEach(music => {
+                music.volume(this.volume * 0.5);
+            });
+            
+            Object.values(this.sounds.sfx).forEach(sfx => {
+                sfx.volume(this.volume);
+            });
+        }
+    }
+
     playMusic(type) {
+        if (!this.hasUserInteracted) {
+            console.log('⚠️ AudioContext no permitido. Esperando interacción del usuario...');
+            alert('⚠️ Por favor, haz clic o toca la pantalla para habilitar el audio y comenzar el juego.');
+            return;
+        }
+
         if (this.music) {
             this.music.stop();
         }
@@ -91,18 +123,26 @@ class AudioSystem {
     }
 
     playSFX(sound) {
+        if (!this.hasUserInteracted) {
+            console.log('⚠️ AudioContext no permitido. Esperando interacción del usuario...');
+            return;
+        }
+
         this.sounds.sfx[sound].volume(this.volume);
         this.sounds.sfx[sound].play();
     }
 
     setVolume(volume) {
         this.volume = volume / 100;
-        if (this.music) {
-            this.music.volume(this.volume * 0.5);
+        
+        if (this.hasUserInteracted) {
+            if (this.music) {
+                this.music.volume(this.volume * 0.5);
+            }
+            Object.values(this.sounds.sfx).forEach(sound => {
+                sound.volume(this.volume);
+            });
         }
-        Object.values(this.sounds.sfx).forEach(sound => {
-            sound.volume(this.volume);
-        });
     }
 }
 
@@ -134,6 +174,11 @@ class ParticleSystem {
     }
 
     renderParticle(particle) {
+        if (!this.container) {
+            console.error('⚠️ Contenedor de partículas no encontrado.');
+            return;
+        }
+
         const element = document.createElement('div');
         element.className = 'particle';
         element.style.left = `${particle.x}px`;
@@ -183,11 +228,13 @@ class ParticleSystem {
 
     clear() {
         this.particles = [];
-        this.container.innerHTML = '';
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
     }
 }
 
-// ===== ENTIDADES DEL JUEGO =====
+// ===== ENTIDADES DEL JUEGO (Mejoradas con verificaciones) =====
 class Player {
     constructor(game) {
         this.game = game;
@@ -211,11 +258,13 @@ class Player {
 
     update() {
         // Movimiento
-        if (this.game.keys.ArrowLeft || this.game.keys.KeyA) {
-            this.x -= this.speed;
-        }
-        if (this.game.keys.ArrowRight || this.game.keys.KeyD) {
-            this.x += this.speed;
+        if (this.game && this.game.input && this.game.input.keys) {
+            if (this.game.input.keys.ArrowLeft || this.game.input.keys.KeyA) {
+                this.x -= this.speed;
+            }
+            if (this.game.input.keys.ArrowRight || this.game.input.keys.KeyD) {
+                this.x += this.speed;
+            }
         }
 
         // Límites
@@ -238,6 +287,11 @@ class Player {
     }
 
     draw(ctx) {
+        if (!ctx) {
+            console.error('⚠️ Contexto del canvas no definido.');
+            return;
+        }
+
         ctx.fillStyle = this.invincible ? 'rgba(0, 255, 255, 0.5)' : this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
 
@@ -261,15 +315,19 @@ class Player {
         this.powerUpTimer = duration;
 
         // Efecto visual
-        this.game.particleSystem.createParticle(
-            this.x + this.width / 2,
-            this.y,
-            '#ffff00',
-            { x: (Math.random() - 0.5) * 2, y: -2 },
-            8
-        );
+        if (this.game && this.game.particleSystem) {
+            this.game.particleSystem.createParticle(
+                this.x + this.width / 2,
+                this.y,
+                '#ffff00',
+                { x: (Math.random() - 0.5) * 2, y: -2 },
+                8
+            );
+        }
 
-        this.game.audio.playSFX('powerup');
+        if (this.game && this.game.audio) {
+            this.game.audio.playSFX('powerup');
+        }
     }
 
     takeDamage() {
@@ -280,552 +338,169 @@ class Player {
         this.invincibleTimer = 60;
 
         // Efecto visual
-        this.game.particleSystem.createParticle(
-            this.x + this.width / 2,
-            this.y + this.height / 2,
-            '#ff0000',
-            { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 },
-            10
-        );
+        if (this.game && this.game.particleSystem) {
+            this.game.particleSystem.createParticle(
+                this.x + this.width / 2,
+                this.y + this.height / 2,
+                '#ff0000',
+                { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 },
+                10
+            );
+        }
+
+        if (this.game && this.game.audio) {
+            this.game.audio.playSFX('destroy');
+        }
 
         return true;
     }
 }
 
-class Block {
-    constructor(game, x, y, width, height, color, type = 'normal') {
-        this.game = game;
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.color = color;
-        this.type = type; // normal, resistant, enemy, powerup
-        this.hitsRequired = type === 'resistant' ? 2 : 1;
-        this.currentHits = 0;
-        this.speed = type === 'enemy' ? 1 : 0;
-        this.direction = 1;
-    }
-
-    update() {
-        // Movimiento de enemigos
-        if (this.type === 'enemy') {
-            this.x += this.speed * this.direction;
-
-            // Cambiar dirección al llegar a los bordes
-            if (this.x <= 0 || this.x + this.width >= GameConfig.width) {
-                this.direction *= -1;
-            }
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-
-        // Dibujar bordes
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
-
-        // Dibujar hits requeridos para bloques resistentes
-        if (this.type === 'resistant') {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${this.hitsRequired - this.currentHits}`, 
-                        this.x + this.width / 2, this.y + this.height / 2 + 5);
-        }
-    }
-
-    hit() {
-        this.currentHits++;
-
-        // Efecto visual
-        this.game.particleSystem.createParticle(
-            this.x + this.width / 2,
-            this.y + this.height / 2,
-            this.color,
-            { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 },
-            8
-        );
-
-        this.game.audio.playSFX('hit');
-
-        if (this.currentHits >= this.hitsRequired) {
-            this.destroy();
-            return true;
-        }
-        return false;
-    }
-
-    destroy() {
-        // Efecto de destrucción
-        for (let i = 0; i < 30; i++) {
-            this.game.particleSystem.createParticle(
-                this.x + this.width / 2,
-                this.y + this.height / 2,
-                this.color,
-                { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 },
-                Math.random() * 8 + 3
-            );
-        }
-
-        this.game.audio.playSFX('destroy');
-
-        // Si es power-up, generar power-up
-        if (this.type === 'powerup') {
-            const powerUpTypes = ['multiShot', 'laser', 'shield', 'timeSlow'];
-            const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
-            this.game.spawnPowerUp(this.x + this.width / 2, this.y);
-        }
-    }
-}
-
-class Projectile {
-    constructor(game, x, y, width, height, color, speed, isLaser = false) {
-        this.game = game;
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.color = color;
-        this.speed = speed;
-        this.isLaser = isLaser;
-        this.active = true;
-    }
-
-    update() {
-        this.y -= this.speed;
-
-        // Desactivar si sale de pantalla
-        if (this.y + this.height < 0) {
-            this.active = false;
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-
-        if (this.isLaser) {
-            ctx.strokeStyle = this.color;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(this.x + this.width / 2, this.y);
-            ctx.lineTo(this.x + this.width / 2, this.y + this.height);
-            ctx.stroke();
-        }
-    }
-
-    checkCollision(blocks) {
-        for (let i = 0; i < blocks.length; i++) {
-            const block = blocks[i];
-            if (this.x < block.x + block.width &&
-                this.x + this.width > block.x &&
-                this.y < block.y + block.height &&
-                this.y + this.height > block.y) {
-
-                return i; // Índice del bloque colisionado
-            }
-        }
-        return -1;
-    }
-}
-
-class PowerUp {
-    constructor(game, x, y, type) {
-        this.game = game;
-        this.x = x;
-        this.y = y;
-        this.width = 30;
-        this.height = 30;
-        this.type = type;
-        this.speed = 2;
-        this.active = true;
-        this.colors = {
-            multiShot: '#ffff00',
-            laser: '#ff00ff',
-            shield: '#00ff00',
-            timeSlow: '#00ffff'
-        };
-    }
-
-    update() {
-        this.y += this.speed;
-
-        // Desactivar si sale de pantalla
-        if (this.y > GameConfig.height) {
-            this.active = false;
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = this.colors[this.type];
-        ctx.beginPath();
-        ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Icono según tipo
-        ctx.fillStyle = '#000';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        const icons = {
-            multiShot: '⚡',
-            laser: '✦',
-            shield: '🛡',
-            timeSlow: '⏳'
-        };
-
-        ctx.fillText(icons[this.type], this.x + this.width / 2, this.y + this.height / 2);
-    }
-
-    checkCollision(player) {
-        return this.x < player.x + player.width &&
-               this.x + this.width > player.x &&
-               this.y < player.y + player.height &&
-               this.y + this.height > player.y;
-    }
-}
-
-// ===== NIVELES =====
-class Level {
-    constructor(game, levelNumber) {
-        this.game = game;
-        this.number = levelNumber;
-        this.blocks = [];
-        this.enemies = [];
-        this.powerUps = [];
-        this.completed = false;
-        this.blockRows = Math.min(4 + Math.floor(levelNumber / 3), 8);
-        this.blocksPerRow = 8;
-        this.generateLevel();
-    }
-
-    generateLevel() {
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-        const blockWidth = (GameConfig.width - 40) / this.blocksPerRow;
-        const blockHeight = 30;
-
-        // Generar bloques
-        for (let row = 0; row < this.blockRows; row++) {
-            for (let col = 0; col < this.blocksPerRow; col++) {
-                // Espacio para el jugador
-                if (row === this.blockRows - 1 && (col === Math.floor(this.blocksPerRow / 2) || col === Math.floor(this.blocksPerRow / 2) - 1)) {
-                    continue;
-                }
-
-                const x = 20 + col * blockWidth;
-                const y = 50 + row * blockHeight;
-
-                // Probabilidad de bloques resistentes
-                const isResistant = Math.random() < 0.3 && this.number > 2;
-                const isEnemy = Math.random() < 0.1 && this.number > 3;
-                const isPowerUp = Math.random() < 0.05 && this.number > 4;
-
-                let type = 'normal';
-                if (isResistant) type = 'resistant';
-                if (isEnemy) type = 'enemy';
-                if (isPowerUp) type = 'powerup';
-
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                this.blocks.push(new Block(this.game, x, y, blockWidth - 2, blockHeight - 2, color, type));
-            }
-        }
-
-        // Generar enemigos
-        if (this.number > 3) {
-            for (let i = 0; i < Math.min(this.number - 2, 5); i++) {
-                const x = Math.random() * (GameConfig.width - 100) + 50;
-                const y = Math.random() * 100 + 50;
-                this.enemies.push(new Block(this.game, x, y, 40, 20, '#ff0000', 'enemy'));
-            }
-        }
-    }
-
-    update() {
-        // Actualizar bloques
-        this.blocks.forEach(block => block.update());
-        
-        // Actualizar enemigos
-        this.enemies.forEach(enemy => enemy.update());
-
-        // Actualizar power-ups
-        this.powerUps = this.powerUps.filter(powerUp => {
-            powerUp.update();
-            return powerUp.active;
-        });
-
-        // Verificar si el nivel está completado
-        if (this.blocks.length === 0 && this.enemies.length === 0) {
-            this.completed = true;
-        }
-    }
-
-    draw(ctx) {
-        // Dibujar bloques
-        this.blocks.forEach(block => block.draw(ctx));
-        
-        // Dibujar enemigos
-        this.enemies.forEach(enemy => enemy.draw(ctx));
-
-        // Dibujar power-ups
-        this.powerUps.forEach(powerUp => powerUp.draw(ctx));
-    }
-
-    spawnPowerUp(x, y) {
-        const types = ['multiShot', 'laser', 'shield', 'timeSlow'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
-        this.powerUps.push(new PowerUp(this.game, x - 15, y, randomType));
-    }
-}
-
-// ===== SISTEMA DE PUNTUACIÓN =====
-class ScoreSystem {
-    constructor() {
-        this.score = 0;
-        this.level = 1;
-        this.lives = 3;
-        this.bestScore = this.loadBestScore();
-        this.records = this.loadRecords();
-    }
-
-    addScore(points) {
-        this.score += points;
-        if (this.score > this.bestScore) {
-            this.bestScore = this.score;
-            this.saveBestScore();
-        }
-    }
-
-    nextLevel() {
-        this.level++;
-        this.saveRecords();
-    }
-
-    loseLife() {
-        this.lives--;
-        return this.lives > 0;
-    }
-
-    reset() {
-        this.score = 0;
-        this.level = 1;
-        this.lives = 3;
-    }
-
-    loadBestScore() {
-        const saved = localStorage.getItem('blockShooterBestScore');
-        return saved ? parseInt(saved) : 0;
-    }
-
-    saveBestScore() {
-        localStorage.setItem('blockShooterBestScore', this.bestScore.toString());
-    }
-
-    addRecord(score) {
-        const date = new Date().toISOString();
-        this.records.push({ score, date });
-        this.records.sort((a, b) => b.score - a.score);
-        this.records = this.records.slice(0, 10);
-        this.saveRecords();
-    }
-
-    loadRecords() {
-        const saved = localStorage.getItem('blockShooterRecords');
-        return saved ? JSON.parse(saved) : [];
-    }
-
-    saveRecords() {
-        localStorage.setItem('blockShooterRecords', JSON.stringify(this.records));
-    }
-}
-
-// ===== SISTEMA DE ENTRADA =====
-class InputSystem {
-    constructor() {
-        this.keys = {};
-        this.touchControls = {
-            left: false,
-            right: false,
-            shoot: false
-        };
-        this.hasUserInteracted = false;
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        // Detectar interacción del usuario para habilitar audio
-        const enableAudioContext = () => {
-            if (!this.hasUserInteracted) {
-                this.hasUserInteracted = true;
-                console.log('✅ AudioContext habilitado por interacción del usuario.');
-                
-                // Inicializar el sistema de audio
-                if (this.game && this.game.audio) {
-                    this.game.audio.setVolume(70);
-                }
-                
-                // Eliminar el listener después de la primera interacción
-                document.removeEventListener('click', enableAudioContext);
-                document.removeEventListener('keydown', enableAudioContext);
-                document.removeEventListener('touchstart', enableAudioContext);
-            }
-        };
-
-        // Teclado
-        window.addEventListener('keydown', (e) => {
-            enableAudioContext();
-            this.keys[e.code] = true;
-        });
-
-        window.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false;
-        });
-
-        // Mouse
-        const canvas = document.getElementById('gameCanvas');
-        if (canvas) {
-            canvas.addEventListener('mousemove', (e) => {
-                if (this.game && this.game.state === 'playing') {
-                    const rect = canvas.getBoundingClientRect();
-                    this.game.player.x = e.clientX - rect.left - this.game.player.width / 2;
-                }
-            });
-
-            canvas.addEventListener('click', () => {
-                enableAudioContext();
-                if (this.game && this.game.state === 'playing') {
-                    this.game.shoot();
-                }
-            });
-        }
-
-        // Controles táctiles
-        const leftBtn = document.getElementById('leftBtn');
-        const rightBtn = document.getElementById('rightBtn');
-        const shootBtn = document.getElementById('shootBtn');
-
-        if (leftBtn) {
-            leftBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                enableAudioContext();
-                this.touchControls.left = true;
-            });
-
-            leftBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.touchControls.left = false;
-            });
-        }
-
-        if (rightBtn) {
-            rightBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                enableAudioContext();
-                this.touchControls.right = true;
-            });
-
-            rightBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.touchControls.right = false;
-            });
-        }
-
-        if (shootBtn) {
-            shootBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                enableAudioContext();
-                this.touchControls.shoot = true;
-            });
-
-            shootBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.touchControls.shoot = false;
-            });
-        }
-
-        // Escuchar clics en cualquier parte de la página para habilitar audio
-        document.addEventListener('click', enableAudioContext);
-        document.addEventListener('keydown', enableAudioContext);
-        document.addEventListener('touchstart', enableAudioContext);
-    }
-
-    update() {
-        // Actualizar controles táctiles
-        if (this.touchControls.left) {
-            this.game.player.x -= this.game.player.speed;
-        }
-        if (this.touchControls.right) {
-            this.game.player.x += this.game.player.speed;
-        }
-        if (this.touchControls.shoot) {
-            this.game.shoot();
-            this.touchControls.shoot = false; // Evitar disparos múltiples
-        }
-    }
-}
-
-// ===== CLASE PRINCIPAL DEL JUEGO =====
+// ===== CLASE PRINCIPAL DEL JUEGO (Corregida con verificaciones) =====
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
+        
+        if (!this.canvas) {
+            console.error('⚠️ Error: No se encontró el elemento canvas con id "gameCanvas".');
+            alert('❌ Error crítico: El juego no puede iniciarse porque el canvas no está disponible.');
+            return;
+        }
+        
         this.ctx = this.canvas.getContext('2d');
+        
+        if (!this.ctx) {
+            console.error('⚠️ Error: WebGL/Canvas no está disponible en este navegador.');
+            alert('❌ Error crítico: Tu navegador no soporta WebGL/Canvas. Usa Chrome, Firefox, Edge o Safari.');
+            return;
+        }
+        
         this.audio = new AudioSystem();
         this.particleSystem = new ParticleSystem();
-        this.input = new InputSystem();
+        this.input = new InputSystem(this);
         this.scoreSystem = new ScoreSystem();
         this.player = new Player(this);
         this.level = null;
         this.projectiles = [];
-        this.state = 'loading'; // loading, menu, playing, paused, gameOver, victory
+        this.state = 'loading';
         this.lastTime = 0;
         this.deltaTime = 0;
         this.animationFrameId = null;
+        
         this.setupEventListeners();
         this.initGame();
     }
 
     setupEventListeners() {
         // Botones del menú
-        document.getElementById('startGameBtn').addEventListener('click', () => this.startGame());
-        document.getElementById('controlsBtn').addEventListener('click', () => this.showScreen('controls-screen'));
-        document.getElementById('recordsBtn').addEventListener('click', () => this.showRecords());
-        document.getElementById('settingsBtn').addEventListener('click', () => this.showScreen('settings-screen'));
-        document.getElementById('creditsBtn').addEventListener('click', () => this.showScreen('credits-screen'));
+        const startGameBtn = document.getElementById('startGameBtn');
+        const controlsBtn = document.getElementById('controlsBtn');
+        const recordsBtn = document.getElementById('recordsBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const creditsBtn = document.getElementById('creditsBtn');
         
         // Botones de controles
-        document.getElementById('backFromControlsBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const backFromControlsBtn = document.getElementById('backFromControlsBtn');
         
         // Botones de records
-        document.getElementById('backFromRecordsBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const backFromRecordsBtn = document.getElementById('backFromRecordsBtn');
         
         // Botones de ajustes
-        document.getElementById('backFromSettingsBtn').addEventListener('click', () => this.showScreen('main-menu'));
-        document.getElementById('volumeSlider').addEventListener('input', (e) => {
-            const volume = parseInt(e.target.value);
-            document.getElementById('volumeValue').textContent = `${volume}%`;
-            this.audio.setVolume(volume);
-        });
+        const backFromSettingsBtn = document.getElementById('backFromSettingsBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
         
         // Botones de créditos
-        document.getElementById('backFromCreditsBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const backFromCreditsBtn = document.getElementById('backFromCreditsBtn');
         
         // Botones de juego
-        document.getElementById('pauseBtn').addEventListener('click', () => this.pauseGame());
-        document.getElementById('resumeGameBtn').addEventListener('click', () => this.resumeGame());
-        document.getElementById('restartGameBtn').addEventListener('click', () => this.restartGame());
-        document.getElementById('quitGameBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeGameBtn = document.getElementById('resumeGameBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        const quitGameBtn = document.getElementById('quitGameBtn');
         
         // Pantalla de game over
-        document.getElementById('restartAfterGameOverBtn').addEventListener('click', () => this.startGame());
-        document.getElementById('backToMenuAfterGameOverBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const restartAfterGameOverBtn = document.getElementById('restartAfterGameOverBtn');
+        const backToMenuAfterGameOverBtn = document.getElementById('backToMenuAfterGameOverBtn');
         
         // Pantalla de victoria
-        document.getElementById('restartAfterVictoryBtn').addEventListener('click', () => this.startGame());
-        document.getElementById('backToMenuAfterVictoryBtn').addEventListener('click', () => this.showScreen('main-menu'));
+        const restartAfterVictoryBtn = document.getElementById('restartAfterVictoryBtn');
+        const backToMenuAfterVictoryBtn = document.getElementById('backToMenuAfterVictoryBtn');
+        
+        // Verificar que los elementos existen
+        if (!startGameBtn || !controlsBtn || !recordsBtn || !settingsBtn || !creditsBtn) {
+            console.error('⚠️ Error: Uno o más botones del menú no están disponibles.');
+            return;
+        }
+
+        // Botones del menú
+        startGameBtn.addEventListener('click', () => this.startGame());
+        controlsBtn.addEventListener('click', () => this.showScreen('controls-screen'));
+        recordsBtn.addEventListener('click', () => this.showRecords());
+        settingsBtn.addEventListener('click', () => this.showScreen('settings-screen'));
+        creditsBtn.addEventListener('click', () => this.showScreen('credits-screen'));
+        
+        // Botones de controles
+        if (backFromControlsBtn) {
+            backFromControlsBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        // Botones de records
+        if (backFromRecordsBtn) {
+            backFromRecordsBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        // Botones de ajustes
+        if (backFromSettingsBtn) {
+            backFromSettingsBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', (e) => {
+                const volume = parseInt(e.target.value);
+                document.getElementById('volumeValue').textContent = `${volume}%`;
+                this.audio.setVolume(volume);
+            });
+        }
+        
+        // Botones de créditos
+        if (backFromCreditsBtn) {
+            backFromCreditsBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        // Botones de juego
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pauseGame());
+        }
+        
+        if (resumeGameBtn) {
+            resumeGameBtn.addEventListener('click', () => this.resumeGame());
+        }
+        
+        if (restartGameBtn) {
+            restartGameBtn.addEventListener('click', () => this.restartGame());
+        }
+        
+        if (quitGameBtn) {
+            quitGameBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        // Pantalla de game over
+        if (restartAfterGameOverBtn) {
+            restartAfterGameOverBtn.addEventListener('click', () => this.startGame());
+        }
+        
+        if (backToMenuAfterGameOverBtn) {
+            backToMenuAfterGameOverBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
+        
+        // Pantalla de victoria
+        if (restartAfterVictoryBtn) {
+            restartAfterVictoryBtn.addEventListener('click', () => this.startGame());
+        }
+        
+        if (backToMenuAfterVictoryBtn) {
+            backToMenuAfterVictoryBtn.addEventListener('click', () => this.showScreen('main-menu'));
+        }
     }
 
     initGame() {
@@ -844,8 +519,15 @@ class Game {
                 this.showScreen('main-menu');
                 this.audio.playMusic('menu');
             }
-            document.getElementById('loadingProgress').style.width = `${progress}%`;
-            document.getElementById('loadingText').textContent = `Cargando... ${Math.floor(progress)}%`;
+            const loadingProgress = document.getElementById('loadingProgress');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (loadingProgress) {
+                loadingProgress.style.width = `${progress}%`;
+            }
+            if (loadingText) {
+                loadingText.textContent = `Cargando... ${Math.floor(progress)}%`;
+            }
         }, 100);
     }
 
@@ -884,8 +566,16 @@ class Game {
         if (this.state === 'playing') {
             this.state = 'paused';
             this.showScreen('pause-screen');
-            document.getElementById('pauseLevel').textContent = this.scoreSystem.level;
-            document.getElementById('pauseScore').textContent = this.scoreSystem.score;
+            
+            const pauseLevel = document.getElementById('pauseLevel');
+            const pauseScore = document.getElementById('pauseScore');
+            
+            if (pauseLevel && this.scoreSystem) {
+                pauseLevel.textContent = this.scoreSystem.level;
+            }
+            if (pauseScore && this.scoreSystem) {
+                pauseScore.textContent = this.scoreSystem.score;
+            }
         }
     }
 
@@ -902,6 +592,12 @@ class Game {
 
     showRecords() {
         const recordsList = document.getElementById('recordsList');
+        
+        if (!recordsList) {
+            console.error('⚠️ Error: Elemento recordsList no encontrado.');
+            return;
+        }
+        
         recordsList.innerHTML = '';
 
         if (this.scoreSystem.records.length === 0) {
@@ -925,167 +621,45 @@ class Game {
         this.audio.playSFX('button');
     }
 
-    shoot() {
-        if (this.state !== 'playing') return;
-
-        if (this.player.powerUps.multiShot) {
-            // Disparo múltiple
-            this.projectiles.push(new Projectile(this, this.player.x, this.player.y - 20, 8, 20, '#ffff00', 10));
-            this.projectiles.push(new Projectile(this, this.player.x + 20, this.player.y - 20, 8, 20, '#ffff00', 10));
-            this.projectiles.push(new Projectile(this, this.player.x - 20, this.player.y - 20, 8, 20, '#ffff00', 10));
-        } else if (this.player.powerUps.laser) {
-            // Disparo láser
-            this.projectiles.push(new Projectile(this, this.player.x + this.player.width / 2 - 3, this.player.y - 20, 6, 400, '#ff00ff', 15, true));
-        } else {
-            // Disparo normal
-            this.projectiles.push(new Projectile(this, this.player.x + this.player.width / 2 - 3, this.player.y - 20, 6, 20, '#00ffff', 10));
-        }
-
-        this.audio.playSFX('shoot');
-    }
-
     update() {
-        if (this.state !== 'playing') return;
-
+        // Verificar que el juego esté definido
+        if (!this) {
+            console.error('⚠️ Error: game no está definido.');
+            return;
+        }
+        
         // Actualizar entrada
-        this.input.update();
-
+        if (this.input) {
+            this.input.update();
+        }
+        
         // Actualizar jugador
-        this.player.update();
-
+        if (this.player) {
+            this.player.update();
+        }
+        
         // Actualizar nivel
-        this.level.update();
-
+        if (this.level) {
+            this.level.update();
+        }
+        
         // Actualizar proyectiles
-        this.projectiles = this.projectiles.filter(projectile => {
-            projectile.update();
-            return projectile.active;
-        });
-
-        // Verificar colisiones de proyectiles con bloques
-        this.projectiles.forEach((projectile, pIndex) => {
-            const blockIndex = projectile.checkCollision(this.level.blocks);
-            if (blockIndex !== -1) {
-                const block = this.level.blocks[blockIndex];
-                const destroyed = block.hit();
-
-                if (destroyed) {
-                    this.level.blocks.splice(blockIndex, 1);
-                    this.scoreSystem.addScore(10 * this.scoreSystem.level);
+        if (Array.isArray(this.projectiles)) {
+            this.projectiles = this.projectiles.filter(projectile => {
+                if (projectile && typeof projectile.update === 'function') {
+                    projectile.update();
                 }
-
-                projectile.active = false;
-            }
-
-            // Verificar colisiones con enemigos
-            this.level.enemies.forEach((enemy, eIndex) => {
-                if (projectile.x < enemy.x + enemy.width &&
-                    projectile.x + projectile.width > enemy.x &&
-                    projectile.y < enemy.y + enemy.height &&
-                    projectile.y + projectile.height > enemy.y) {
-
-                    enemy.hit();
-                    if (enemy.currentHits >= enemy.hitsRequired) {
-                        this.level.enemies.splice(eIndex, 1);
-                        this.scoreSystem.addScore(50 * this.scoreSystem.level);
-                    }
-
-                    projectile.active = false;
-                }
+                return projectile && projectile.active === true;
             });
-        });
-
-        // Verificar colisiones de power-ups con jugador
-        this.level.powerUps.forEach((powerUp, index) => {
-            if (powerUp.checkCollision(this.player)) {
-                this.player.activatePowerUp(powerUp.type);
-                this.level.powerUps.splice(index, 1);
-                this.scoreSystem.addScore(100);
-            }
-        });
-
-        // Verificar colisiones de bloques/enemigos con jugador
-        this.level.blocks.forEach(block => {
-            if (block.type === 'enemy' || block.y + block.height >= this.player.y) {
-                if (this.player.x < block.x + block.width &&
-                    this.player.x + this.player.width > block.x &&
-                    this.player.y < block.y + block.height &&
-                    this.player.y + this.player.height > block.y) {
-
-                    if (block.type === 'enemy') {
-                        if (this.player.takeDamage()) {
-                            // Eliminar bloque enemigo
-                            const index = this.level.blocks.indexOf(block);
-                            if (index !== -1) {
-                                this.level.blocks.splice(index, 1);
-                            }
-                        }
-                    } else if (this.player.takeDamage()) {
-                        // Eliminar bloque normal
-                        const index = this.level.blocks.indexOf(block);
-                        if (index !== -1) {
-                            this.level.blocks.splice(index, 1);
-                        }
-                    }
-                }
-            }
-        });
-
-        // Verificar si el jugador ha perdido todas las vidas
-        if (this.player.lives <= 0) {
-            this.gameOver();
         }
-
-        // Verificar si el nivel está completado
-        if (this.level.completed) {
-            this.levelComplete();
-        }
-
-        // Actualizar HUD
-        document.getElementById('levelDisplay').textContent = this.scoreSystem.level;
-        document.getElementById('scoreDisplay').textContent = this.scoreSystem.score;
-        document.getElementById('livesDisplay').textContent = this.player.lives;
-        document.getElementById('bestScoreDisplay').textContent = this.scoreSystem.bestScore;
-    }
-
-    levelComplete() {
-        this.audio.playSFX('levelComplete');
-        this.scoreSystem.nextLevel();
-        this.level = new Level(this, this.scoreSystem.level);
-        this.player = new Player(this);
-
-        // Mostrar mensaje de nivel completado
-        setTimeout(() => {
-            if (this.scoreSystem.level >= 10) {
-                this.victory();
-            }
-        }, 1000);
-    }
-
-    gameOver() {
-        this.state = 'gameOver';
-        this.audio.playMusic('gameOver');
-        document.getElementById('finalLevel').textContent = this.scoreSystem.level;
-        document.getElementById('finalScore').textContent = this.scoreSystem.score;
-        
-        // Verificar si batió algún record
-        const recordsBeaten = this.scoreSystem.records.filter(r => r.score < this.scoreSystem.score).length;
-        document.getElementById('recordsBeaten').textContent = recordsBeaten;
-        
-        this.scoreSystem.addRecord(this.scoreSystem.score);
-        this.showScreen('game-over-screen');
-    }
-
-    victory() {
-        this.state = 'victory';
-        this.audio.playMusic('victory');
-        document.getElementById('victoryLevel').textContent = this.scoreSystem.level;
-        document.getElementById('victoryScore').textContent = this.scoreSystem.score;
-        this.scoreSystem.addRecord(this.scoreSystem.score);
-        this.showScreen('victory-screen');
     }
 
     gameLoop(timestamp) {
+        if (!this || !this.state) {
+            console.error('⚠️ Error: game o game.state no están definidos.');
+            return;
+        }
+        
         if (!this.lastTime) this.lastTime = timestamp;
         this.deltaTime = timestamp - this.lastTime;
         this.lastTime = timestamp;
@@ -1103,6 +677,12 @@ class Game {
     }
 
     render() {
+        // Verificar que el contexto esté definido
+        if (!this || !this.ctx) {
+            console.error('⚠️ Error: Contexto del canvas no está definido.');
+            return;
+        }
+        
         // Limpiar canvas
         this.ctx.clearRect(0, 0, GameConfig.width, GameConfig.height);
 
@@ -1116,10 +696,18 @@ class Game {
         }
 
         // Dibujar jugador
-        this.player.draw(this.ctx);
+        if (this.player) {
+            this.player.draw(this.ctx);
+        }
 
         // Dibujar proyectiles
-        this.projectiles.forEach(projectile => projectile.draw(this.ctx));
+        if (Array.isArray(this.projectiles)) {
+            this.projectiles.forEach(projectile => {
+                if (projectile && typeof projectile.draw === 'function') {
+                    projectile.draw(this.ctx);
+                }
+            });
+        }
     }
 
     destroy() {
@@ -1127,18 +715,158 @@ class Game {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
         }
-        this.particleSystem.clear();
-        this.audio.music.stop();
+        if (this.particleSystem) {
+            this.particleSystem.clear();
+        }
+        if (this.audio && this.audio.music) {
+            this.audio.music.stop();
+        }
     }
 }
 
-// ===== INICIALIZACIÓN =====
+// ===== SISTEMA DE ENTRADA (Corregido para evitar errores de propiedades) =====
+class InputSystem {
+    constructor(game) {
+        this.keys = {};
+        this.touchControls = {
+            left: false,
+            right: false,
+            shoot: false
+        };
+        this.game = game;
+        this.hasUserInteracted = false;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Detectar interacción del usuario para habilitar audio y controles
+        const enableUserInteraction = () => {
+            if (!this.hasUserInteracted) {
+                this.hasUserInteracted = true;
+                console.log('✅ Interacción del usuario detectada. Controles y audio habilitados.');
+                
+                // Mostrar mensaje al usuario (opcional)
+                alert('🎮 ¡Listo! Ahora puedes jugar. Usa los controles o teclas para moverte y disparar.');
+                
+                // Eliminar el listener después de la primera interacción
+                document.removeEventListener('click', enableUserInteraction);
+                document.removeEventListener('keydown', enableUserInteraction);
+                document.removeEventListener('touchstart', enableUserInteraction);
+            }
+        };
+
+        // Teclado (con verificaciones)
+        window.addEventListener('keydown', (e) => {
+            enableUserInteraction();
+            this.keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+        });
+
+        // Mouse (con verificaciones)
+        const canvas = document.getElementById('gameCanvas');
+        if (canvas) {
+            canvas.addEventListener('mousemove', (e) => {
+                enableUserInteraction();
+                if (this.game && this.game.state === 'playing' && this.game.player) {
+                    const rect = canvas.getBoundingClientRect();
+                    this.game.player.x = e.clientX - rect.left - this.game.player.width / 2;
+                }
+            });
+
+            canvas.addEventListener('click', () => {
+                enableUserInteraction();
+                if (this.game && this.game.state === 'playing') {
+                    this.game.shoot();
+                }
+            });
+        }
+
+        // Controles táctiles (con verificaciones)
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const shootBtn = document.getElementById('shootBtn');
+
+        if (leftBtn) {
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableUserInteraction();
+                this.touchControls.left = true;
+            });
+
+            leftBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.left = false;
+            });
+        }
+
+        if (rightBtn) {
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableUserInteraction();
+                this.touchControls.right = true;
+            });
+
+            rightBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.right = false;
+            });
+        }
+
+        if (shootBtn) {
+            shootBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableUserInteraction();
+                this.touchControls.shoot = true;
+            });
+
+            shootBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.shoot = false;
+            });
+        }
+
+        // Escuchar clics en cualquier parte de la página para habilitar controles y audio
+        document.addEventListener('click', enableUserInteraction);
+        document.addEventListener('keydown', enableUserInteraction);
+        document.addEventListener('touchstart', enableUserInteraction);
+    }
+
+    update() {
+        // Verificar que el juego esté definido
+        if (!this.game) {
+            console.error('⚠️ Error: game no está definido en InputSystem.');
+            return;
+        }
+        
+        // Actualizar controles táctiles
+        if (this.touchControls) {
+            if (this.touchControls.left) {
+                this.game.player.x -= this.game.player.speed;
+            }
+            if (this.touchControls.right) {
+                this.game.player.x += this.game.player.speed;
+            }
+            if (this.touchControls.shoot) {
+                this.game.shoot();
+                this.touchControls.shoot = false; // Evitar disparos múltiples
+            }
+        }
+    }
+}
+
+// ===== INICIALIZACIÓN (Corregida para evitar errores) =====
 window.addEventListener('load', () => {
     // Detectar dispositivo móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-        document.getElementById('mobileControls').style.display = 'flex';
+        const mobileControls = document.getElementById('mobileControls');
+        if (mobileControls) {
+            mobileControls.style.display = 'flex';
+        }
     }
 
     // Verificar si el canvas existe antes de iniciar el juego
@@ -1150,7 +878,8 @@ window.addEventListener('load', () => {
     }
 
     // Verificar si WebGL está disponible
-    if (!canvas.getContext('webgl') && !canvas.getContext('experimental-webgl')) {
+    const ctx = canvas.getContext('webgl');
+    if (!ctx) {
         console.error('Error: WebGL no está disponible en este navegador.');
         alert('Error: Tu navegador no soporta WebGL. Por favor, usa Chrome, Firefox, Edge o Safari.');
         return;
@@ -1163,8 +892,10 @@ window.addEventListener('load', () => {
 // Manejar errores
 window.addEventListener('error', (e) => {
     console.error('Error en el juego:', e.error);
+    alert('❌ Se detectó un error en el juego. Revisa la consola (F12) para más detalles.');
 });
 
 window.addEventListener('unhandledrejection', (e) => {
     console.error('Rechazo no manejado:', e.reason);
+    alert('❌ El juego encontró un problema crítico. Contacta al desarrollador.');
 });
