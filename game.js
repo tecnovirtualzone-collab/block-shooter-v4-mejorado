@@ -1100,6 +1100,21 @@ window.addEventListener('load', () => {
         document.getElementById('mobileControls').style.display = 'flex';
     }
 
+    // Verificar si el canvas existe antes de iniciar el juego
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) {
+        console.error('Error: No se encontró el elemento canvas con id "gameCanvas".');
+        alert('Error: El juego no puede iniciarse porque el canvas no está disponible.');
+        return;
+    }
+
+    // Verificar si WebGL está disponible
+    if (!canvas.getContext('webgl') && !canvas.getContext('experimental-webgl')) {
+        console.error('Error: WebGL no está disponible en este navegador.');
+        alert('Error: Tu navegador no soporta WebGL. Por favor, usa Chrome, Firefox, Edge o Safari.');
+        return;
+    }
+
     // Iniciar juego
     window.game = new Game();
 });
