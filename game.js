@@ -717,7 +717,11 @@ class InputSystem {
             }
         };
 
-        // Teclado
+        // Teclado - Asegurar que this.keys esté inicializado
+        if (!this.keys) {
+            this.keys = {};
+        }
+
         window.addEventListener('keydown', (e) => {
             enableAudioContext();
             this.keys[e.code] = true;
@@ -1060,6 +1064,12 @@ class Game {
         if (!this.input) {
             console.error('⚠️ Error: El sistema de entrada (InputSystem) no está definido.');
             return;
+        }
+
+        // Verificar que this.keys esté inicializado
+        if (!this.keys) {
+            console.error('⚠️ Error: this.keys no está inicializado en el sistema de entrada.');
+            this.keys = {};
         }
 
         // Actualizar entrada
