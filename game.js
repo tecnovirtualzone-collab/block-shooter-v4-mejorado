@@ -118,9 +118,13 @@ class AudioSystem {
     }
 
     playSFX(sound) {
-        if (this.hasUserInteracted) {
-            this.sounds.sfx[sound].volume(this.volume);
-            this.sounds.sfx[sound].play();
+        if (this.hasUserInteracted && this.sounds.sfx[sound]) {
+            try {
+                this.sounds.sfx[sound].volume(this.volume);
+                this.sounds.sfx[sound].play();
+            } catch (e) {
+                console.error('⚠️ Error al reproducir sonido:', e.message);
+            }
         }
     }
 
@@ -1051,6 +1055,12 @@ class Game {
 
     update() {
         if (this.state !== 'playing') return;
+
+        // Verificar que el sistema de entrada esté definido
+        if (!this.input) {
+            console.error('⚠️ Error: El sistema de entrada (InputSystem) no está definido.');
+            return;
+        }
 
         // Actualizar entrada
         this.input.update();
