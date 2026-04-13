@@ -1,0 +1,441 @@
+/* ===== RESET Y ESTILOS BASE ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #0a0a1a;
+    color: #ffffff;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* ===== ESTILOS DE PANTALLAS ===== */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+    z-index: 10;
+}
+
+.screen.active {
+    display: flex;
+}
+
+.screen-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    color: #00ffff;
+    text-align: center;
+}
+
+/* ===== ESTILOS DE MENÚ PRINCIPAL ===== */
+.menu-content {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(20, 20, 40, 0.8);
+    border-radius: 20px;
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    max-width: 500px;
+    width: 90%;
+}
+
+.game-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(90deg, #00ffff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.menu-btn {
+    background: linear-gradient(135deg, #00ffff, #0088ff);
+    color: #000;
+    border: none;
+    padding: 1rem 2rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+    background: linear-gradient(135deg, #00ffff, #00aaff);
+}
+
+.menu-btn:active {
+    transform: translateY(1px);
+}
+
+/* ===== ESTILOS DE CONTROLES ===== */
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.control-method {
+    background: rgba(20, 20, 40, 0.6);
+    padding: 1.5rem;
+    border-radius: 15px;
+    border-left: 4px solid #00ffff;
+}
+
+.control-method h3 {
+    color: #00ffff;
+    margin-bottom: 1rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.2rem;
+}
+
+.control-method ul {
+    list-style: none;
+    padding-left: 1rem;
+}
+
+.control-method li {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+/* ===== ESTILOS DE RECORDS ===== */
+.records-list {
+    background: rgba(20, 20, 40, 0.6);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 2rem 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px solid rgba(0, 255, 255, 0.2);
+}
+
+.records-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.records-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.records-list::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 10px;
+}
+
+.records-list p {
+    text-align: center;
+    color: #aaa;
+    font-size: 1.1rem;
+}
+
+/* ===== ESTILOS DE AJUSTES ===== */
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.setting-item {
+    background: rgba(20, 20, 40, 0.6);
+    padding: 1.5rem;
+    border-radius: 15px;
+    border-left: 4px solid #ff00ff;
+}
+
+.setting-item label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1rem;
+    color: #ff00ff;
+}
+
+input[type="range"] {
+    width: 100%;
+    height: 8px;
+    -webkit-appearance: none;
+    background: #333;
+    border-radius: 5px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #00ffff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+select {
+    width: 100%;
+    padding: 0.8rem;
+    background: #1a1a3a;
+    color: white;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* ===== ESTILOS DE CRÉDITOS ===== */
+.credits-content {
+    background: rgba(20, 20, 40, 0.6);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.credits-content h3 {
+    color: #ff00ff;
+    margin-bottom: 1rem;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.credits-content ul {
+    list-style: none;
+    margin: 1rem 0;
+    padding: 0;
+}
+
+.credits-content li {
+    margin: 0.5rem 0;
+    color: #aaa;
+}
+
+/* ===== ESTILOS DEL JUEGO ===== */
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+}
+
+#gameCanvas {
+    display: block;
+    background: #000;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+    margin: 0 auto;
+}
+
+/* ===== HUD DEL JUEGO ===== */
+.hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    background: rgba(20, 20, 40, 0.8);
+    padding: 10px 20px;
+    border-radius: 15px;
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hud-label {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 5px;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.hud-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* ===== CONTROLES MÓVILES ===== */
+.mobile-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    gap: 20px;
+    z-index: 30;
+}
+
+.mobile-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00ffff, #0088ff);
+    border: none;
+    color: #000;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transition: all 0.2s ease;
+}
+
+.mobile-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+}
+
+.left-btn {
+    background: linear-gradient(135deg, #ff0000, #880000);
+}
+
+.right-btn {
+    background: linear-gradient(135deg, #00ff00, #008800);
+}
+
+.shoot-btn {
+    background: linear-gradient(135deg, #ffff00, #888800);
+    width: 100px;
+    height: 100px;
+}
+
+/* ===== BOTÓN DE PAUSA ===== */
+.pause-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(20, 20, 40, 0.8);
+    color: #00ffff;
+    border: 2px solid #00ffff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.8rem;
+    z-index: 20;
+    transition: all 0.3s ease;
+}
+
+.pause-btn:hover {
+    background: rgba(0, 255, 255, 0.2);
+}
+
+/* ===== PANTALLAS DE ESTADO ===== */
+.game-over-info, .victory-info, .pause-info {
+    background: rgba(20, 20, 40, 0.6);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 2rem 0;
+    text-align: center;
+    border: 2px solid rgba(255, 0, 255, 0.3);
+}
+
+.game-over-info p, .victory-info p, .pause-info p {
+    margin: 0.8rem 0;
+    font-size: 1.1rem;
+}
+
+/* ===== EFECTOS DE PARTÍCULAS ===== */
+#particles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: #00ffff;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.screen.active {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .game-title {
+        font-size: 2rem;
+    }
+    
+    .menu-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .hud {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .mobile-controls {
+        display: flex;
+    }
+}
+
+@media (max-width: 480px) {
+    .screen-title {
+        font-size: 1.8rem;
+    }
+    
+    .game-title {
+        font-size: 1.5rem;
+    }
+    
+    .menu-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+    }
+}
