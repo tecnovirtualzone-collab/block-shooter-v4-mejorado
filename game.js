@@ -652,12 +652,32 @@ class InputSystem {
             right: false,
             shoot: false
         };
+        this.hasUserInteracted = false;
         this.setupEventListeners();
     }
 
     setupEventListeners() {
+        // Detectar interacción del usuario para habilitar audio
+        const enableAudioContext = () => {
+            if (!this.hasUserInteracted) {
+                this.hasUserInteracted = true;
+                console.log('✅ AudioContext habilitado por interacción del usuario.');
+                
+                // Inicializar el sistema de audio
+                if (this.game && this.game.audio) {
+                    this.game.audio.setVolume(70);
+                }
+                
+                // Eliminar el listener después de la primera interacción
+                document.removeEventListener('click', enableAudioContext);
+                document.removeEventListener('keydown', enableAudioContext);
+                document.removeEventListener('touchstart', enableAudioContext);
+            }
+        };
+
         // Teclado
         window.addEventListener('keydown', (e) => {
+            enableAudioContext();
             this.keys[e.code] = true;
         });
 
@@ -667,49 +687,70 @@ class InputSystem {
 
         // Mouse
         const canvas = document.getElementById('gameCanvas');
-        canvas.addEventListener('mousemove', (e) => {
-            if (this.game.state === 'playing') {
-                const rect = canvas.getBoundingClientRect();
-                this.game.player.x = e.clientX - rect.left - this.game.player.width / 2;
-            }
-        });
+        if (canvas) {
+            canvas.addEventListener('mousemove', (e) => {
+                if (this.game && this.game.state === 'playing') {
+                    const rect = canvas.getBoundingClientRect();
+                    this.game.player.x = e.clientX - rect.left - this.game.player.width / 2;
+                }
+            });
 
-        canvas.addEventListener('click', () => {
-            if (this.game.state === 'playing') {
-                this.game.shoot();
-            }
-        });
+            canvas.addEventListener('click', () => {
+                enableAudioContext();
+                if (this.game && this.game.state === 'playing') {
+                    this.game.shoot();
+                }
+            });
+        }
 
         // Controles táctiles
-        document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.touchControls.left = true;
-        });
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const shootBtn = document.getElementById('shootBtn');
 
-        document.getElementById('leftBtn').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.touchControls.left = false;
-        });
+        if (leftBtn) {
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableAudioContext();
+                this.touchControls.left = true;
+            });
 
-        document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.touchControls.right = true;
-        });
+            leftBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.left = false;
+            });
+        }
 
-        document.getElementById('rightBtn').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.touchControls.right = false;
-        });
+        if (rightBtn) {
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableAudioContext();
+                this.touchControls.right = true;
+            });
 
-        document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.touchControls.shoot = true;
-        });
+            rightBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.right = false;
+            });
+        }
 
-        document.getElementById('shootBtn').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.touchControls.shoot = false;
-        });
+        if (shootBtn) {
+            shootBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                enableAudioContext();
+                this.touchControls.shoot = true;
+            });
+
+            shootBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.touchControls.shoot = false;
+            });
+        }
+
+        // Escuchar clics en cualquier parte de la página para habilitar audio
+        document.addEventListener('click', enableAudioContext);
+        document.addEventListener('keydown', enableAudioContext);
+        document.addEventListener('touchstart', enableAudioContext);
     }
 
     update() {
